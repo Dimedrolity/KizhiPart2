@@ -10,12 +10,12 @@ namespace KizhiPart2
 
         private readonly Dictionary<string, int> _memoryVariables = new Dictionary<string, int>();
 
-        private readonly Dictionary<string, Action<PrimitiveCommand>> _commandsAndActions =
+        private readonly Dictionary<string, Action<PrimitiveCommand>> _commandsActions =
             new Dictionary<string, Action<PrimitiveCommand>>();
 
         private bool _sourceCodeStarts;
 
-        private SourceCodeParser _codeParser;
+        private SourceCodeParser _sourceCodeParser;
 
         public Interpreter(TextWriter writer)
         {
@@ -25,16 +25,16 @@ namespace KizhiPart2
 
         private void SetupPrimitiveCommands()
         {
-            _commandsAndActions.Add("set",
+            _commandsActions.Add("set",
                 command => _memoryVariables[command.VariableName] = command.Value.Value);
 
-            _commandsAndActions.Add("sub",
+            _commandsActions.Add("sub",
                 command => _memoryVariables[command.VariableName] -= command.Value.Value);
 
-            _commandsAndActions.Add("rem",
+            _commandsActions.Add("rem",
                 command => _memoryVariables.Remove(command.VariableName));
 
-            _commandsAndActions.Add("print",
+            _commandsActions.Add("print",
                 command => _writer.WriteLine(_memoryVariables[command.VariableName]));
         }
 
@@ -42,7 +42,7 @@ namespace KizhiPart2
         {
             if (_sourceCodeStarts)
             {
-                _codeParser = new SourceCodeParser(command);
+                _sourceCodeParser = new SourceCodeParser(command);
                 _sourceCodeStarts = false;
             }
 
@@ -52,7 +52,7 @@ namespace KizhiPart2
                     _sourceCodeStarts = true;
                     break;
                 case "run":
-                    var primitiveCommands = _codeParser.GetCommandsToExecute();
+                    var primitiveCommands = _sourceCodeParser.GetCommandsToExecute();
                     Execute(primitiveCommands);
                     break;
             }
@@ -72,8 +72,8 @@ namespace KizhiPart2
         {
             if (primitiveCommand.Name == "set" || IsMemoryContains(primitiveCommand.VariableName))
             {
-                var action = _commandsAndActions[primitiveCommand.Name];
-                action(primitiveCommand);
+                var commandAction = _commandsActions[primitiveCommand.Name];
+                commandAction(primitiveCommand);
                 return true;
             }
 
