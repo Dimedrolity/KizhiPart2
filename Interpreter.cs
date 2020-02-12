@@ -8,16 +8,14 @@ namespace KizhiPart2
     {
         private readonly TextWriter _writer;
 
-        private readonly Dictionary<string, int> _variablesInMemory = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> _memoryVariables = new Dictionary<string, int>();
 
-        private readonly Dictionary<string, Action<Command>> _commandsInstructions =
-            new Dictionary<string, Action<Command>>();
+        private readonly Dictionary<string, Action<PrimitiveCommand>> _commandsAndActions =
+            new Dictionary<string, Action<PrimitiveCommand>>();
 
-        private readonly Dictionary<string, List<Command>> _functions = new Dictionary<string, List<Command>>();
+        private bool _sourceCodeStarts;
 
-        private readonly List<Command> _commandsToExecute = new List<Command>();
-
-        private bool isSourceCodeStarts;
+        private SourceCodeParser _codeParser;
 
         public Interpreter(TextWriter writer)
         {
@@ -27,138 +25,76 @@ namespace KizhiPart2
 
         private void SetupPrimitiveCommands()
         {
-            _commandsInstructions.Add("set",
-                command => _variablesInMemory[command.VariableName] = command.Value.Value);
+            _commandsAndActions.Add("set",
+                command => _memoryVariables[command.VariableName] = command.Value.Value);
 
-            _commandsInstructions.Add("sub",
-                command => _variablesInMemory[command.VariableName] -= command.Value.Value);
+            _commandsAndActions.Add("sub",
+                command => _memoryVariables[command.VariableName] -= command.Value.Value);
 
-            _commandsInstructions.Add("rem",
-                command => _variablesInMemory.Remove(command.VariableName));
+            _commandsAndActions.Add("rem",
+                command => _memoryVariables.Remove(command.VariableName));
 
-            _commandsInstructions.Add("print",
-                command => { _writer.WriteLine(_variablesInMemory[command.VariableName]); });
+            _commandsAndActions.Add("print",
+                command => _writer.WriteLine(_memoryVariables[command.VariableName]));
         }
-
 
         public void ExecuteLine(string command)
         {
-            if (isSourceCodeStarts)
+            if (_sourceCodeStarts)
             {
-                ParseSourceCode(command);
-                isSourceCodeStarts = false;
+                _codeParser = new SourceCodeParser(command);
+                _sourceCodeStarts = false;
             }
 
             switch (command)
             {
                 case "set code":
-                    isSourceCodeStarts = true;
+                    _sourceCodeStarts = true;
                     break;
                 case "run":
-                    ExecuteCommands();
+                    var primitiveCommands = _codeParser.GetCommandsToExecute();
+                    Execute(primitiveCommands);
                     break;
             }
         }
 
-        private void ParseSourceCode(string sourceCode)
+        private void Execute(List<PrimitiveCommand> primitiveCommands)
         {
-            var codeLines = sourceCode.Split('\n');
-            var currentLineNumber = 0;
-
-            while (currentLineNumber < codeLines.Length)
+            foreach (var command in primitiveCommands)
             {
-                var currentLine = codeLines[currentLineNumber];
-                var currentLineParts = currentLine.Split(' ');
-                var commandNameOfCurrentLine = currentLineParts[0];
-
-                switch (commandNameOfCurrentLine)
-                {
-                    case "def":
-                    {
-                        var functionName = currentLineParts[1];
-                        currentLineNumber++;
-
-                        _functions.Add(functionName, new List<Command>());
-
-                        while (codeLines[currentLineNumber].StartsWith("    "))
-                        {
-                            var currentCommand = codeLines[currentLineNumber].Trim();
-                            var currentCommandParts = currentCommand.Split(' ');
-                            var command = ParseCommand(currentCommandParts);
-                            _functions[functionName].Add(command);
-
-                            currentLineNumber++;
-                        }
-                        break;
-                    }
-                    case "call":
-                    {
-                        var functionName = currentLineParts[1];
-                        var function = _functions[functionName];
-                        foreach (var command in function)
-                        {
-                            _commandsToExecute.Add(command);
-                        }
-
-                        currentLineNumber++;
-                        break;
-                    }
-                    default:
-                    {
-                        var command = ParseCommand(currentLineParts);
-                        _commandsToExecute.Add(command);
-                        currentLineNumber++;
-                        break;
-                    }
-                }
-            }
-        }
-
-        private Command ParseCommand(string[] commandParts)
-        {
-            int? commandValue = null;
-            if (commandParts.Length > 2)
-                commandValue = int.Parse(commandParts[2]);
-
-            return new Command(commandParts[0], commandParts[1], commandValue);
-        }
-
-        private void ExecuteCommands()
-        {
-            foreach (var command in _commandsToExecute)
-            {
-                var isSuccess = TryExecuteCommand(command);
-                if (!isSuccess)
+                bool success = TryExecute(command);
+                if (!success)
                     return;
             }
         }
 
-        private bool TryExecuteCommand(Command command)
+        private bool TryExecute(PrimitiveCommand primitiveCommand)
         {
-            if (command.Name == "set" || IsVariableExists(command.VariableName))
+            if (primitiveCommand.Name == "set" || IsMemoryContains(primitiveCommand.VariableName))
             {
-                var commandsInstruction = _commandsInstructions[command.Name];
-                commandsInstruction(command);
+                var action = _commandsAndActions[primitiveCommand.Name];
+                action(primitiveCommand);
                 return true;
             }
 
             return false;
         }
 
-        private bool IsVariableExists(string variableName)
+        private bool IsMemoryContains(string variableName)
         {
-            if (_variablesInMemory.ContainsKey(variableName)) return true;
+            if (_memoryVariables.ContainsKey(variableName)) return true;
+
             _writer.WriteLine("Переменная отсутствует в памяти");
             return false;
         }
 
-        private class Command
+        private class PrimitiveCommand
         {
             public string Name { get; }
             public string VariableName { get; }
             public int? Value { get; }
 
-            public Command(string name, string variableName, int? value)
+            public PrimitiveCommand(string name, string variableName, int? value)
             {
                 Name = name;
                 VariableName = variableName;
@@ -168,22 +104,102 @@ namespace KizhiPart2
             // для удобства при дебаге
             public override string ToString() => $"{Name} {VariableName} {Value}";
         }
-        
+
         private class SourceCodeParser
         {
-            private string sourceCode;
-            private int currentLine;
+            private readonly string _sourceCode;
+            private string[] _codeLines;
+            private int _currentLineNumber;
+            private string[] _currentLineParts;
 
-            
+            private readonly List<PrimitiveCommand> _commandsSequenceToExecute = new List<PrimitiveCommand>();
+
+            private readonly Dictionary<string, List<PrimitiveCommand>> _functions =
+                new Dictionary<string, List<PrimitiveCommand>>();
+
             public SourceCodeParser(string sourceCode)
             {
-                this.sourceCode = sourceCode;
+                _sourceCode = sourceCode;
             }
 
-            // public List<Command> GetCommandsToExecute()
-            // {
-            //     
-            // }
+            public List<PrimitiveCommand> GetCommandsToExecute()
+            {
+                _codeLines = _sourceCode.Split('\n');
+
+                while (_currentLineNumber < _codeLines.Length)
+                {
+                    var currentLine = _codeLines[_currentLineNumber];
+                    _currentLineParts = currentLine.Split(' ');
+                    var commandNameOfCurrentLine = _currentLineParts[0];
+
+                    ParseCommandWithName(commandNameOfCurrentLine);
+                }
+
+                return _commandsSequenceToExecute;
+            }
+
+            private void ParseCommandWithName(string commandName)
+            {
+                switch (commandName)
+                {
+                    case "def":
+                        TakeCommandsFromFunctionBody();
+                        break;
+                    case "call":
+                        AddFunctionCommandsToExecutionList();
+                        break;
+                    default:
+                        AddPrimitiveCommandToExecutionList();
+                        break;
+                }
+            }
+
+            private void TakeCommandsFromFunctionBody()
+            {
+                var functionName = _currentLineParts[1];
+                _functions.Add(functionName, new List<PrimitiveCommand>());
+
+                _currentLineNumber++;
+
+                while (_codeLines[_currentLineNumber].StartsWith("    "))
+                {
+                    var currentCommand = _codeLines[_currentLineNumber].TrimStart();
+                    var currentCommandParts = currentCommand.Split(' ');
+                    var command = CreateCommandFrom(currentCommandParts);
+                    _functions[functionName].Add(command);
+
+                    _currentLineNumber++;
+                }
+            }
+
+            private PrimitiveCommand CreateCommandFrom(string[] commandParts)
+            {
+                int? commandValue = null;
+                if (commandParts.Length > 2)
+                    commandValue = int.Parse(commandParts[2]);
+
+                return new PrimitiveCommand(commandParts[0], commandParts[1], commandValue);
+            }
+
+            private void AddFunctionCommandsToExecutionList()
+            {
+                var functionName = _currentLineParts[1];
+                var functionCommands = _functions[functionName];
+                foreach (var command in functionCommands)
+                {
+                    _commandsSequenceToExecute.Add(command);
+                }
+
+                _currentLineNumber++;
+            }
+            
+            private void AddPrimitiveCommandToExecutionList()
+            {
+                var command = CreateCommandFrom(_currentLineParts);
+                _commandsSequenceToExecute.Add(command);
+                
+                _currentLineNumber++;
+            }
         }
     }
 }
