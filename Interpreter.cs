@@ -114,8 +114,8 @@ namespace KizhiPart2
 
             private readonly List<PrimitiveCommand> _commandsSequenceToExecute = new List<PrimitiveCommand>();
 
-            private readonly Dictionary<string, List<PrimitiveCommand>> _functions =
-                new Dictionary<string, List<PrimitiveCommand>>();
+            private readonly Dictionary<string, int> _functionsAndTheirDefinitionLine =
+                new Dictionary<string, int>();
 
             public SourceCodeParser(string sourceCode)
             {
@@ -143,7 +143,7 @@ namespace KizhiPart2
                 switch (commandName)
                 {
                     case "def":
-                        TakeCommandsFromFunctionBody();
+                        SetFuncStartLine();
                         break;
                     case "call":
                         AddFunctionCommandsToExecutionList();
@@ -154,22 +154,35 @@ namespace KizhiPart2
                 }
             }
 
-            private void TakeCommandsFromFunctionBody()
+            private void SetFuncStartLine()
             {
                 var functionName = _currentLineParts[1];
-                _functions.Add(functionName, new List<PrimitiveCommand>());
-
+                _functionsAndTheirDefinitionLine.Add(functionName, _currentLineNumber);
                 _currentLineNumber++;
+                while (_codeLines[_currentLineNumber].StartsWith("    "))
+                {
+                    _currentLineNumber++;
+                }
+            }
+
+            private void AddFunctionCommandsToExecutionList()
+            {
+                var functionName = _currentLineParts[1];
+                var functionCallLineNumber = _currentLineNumber;
+                var functionBodyLineNumber = _functionsAndTheirDefinitionLine[functionName] + 1;
+                _currentLineNumber = functionBodyLineNumber;
 
                 while (_codeLines[_currentLineNumber].StartsWith("    "))
                 {
                     var currentCommand = _codeLines[_currentLineNumber].TrimStart();
                     var currentCommandParts = currentCommand.Split(' ');
                     var command = CreateCommandFrom(currentCommandParts);
-                    _functions[functionName].Add(command);
+                    _commandsSequenceToExecute.Add(command);
 
                     _currentLineNumber++;
                 }
+
+                _currentLineNumber = functionCallLineNumber + 1;
             }
 
             private PrimitiveCommand CreateCommandFrom(string[] commandParts)
@@ -181,23 +194,11 @@ namespace KizhiPart2
                 return new PrimitiveCommand(commandParts[0], commandParts[1], commandValue);
             }
 
-            private void AddFunctionCommandsToExecutionList()
-            {
-                var functionName = _currentLineParts[1];
-                var functionCommands = _functions[functionName];
-                foreach (var command in functionCommands)
-                {
-                    _commandsSequenceToExecute.Add(command);
-                }
-
-                _currentLineNumber++;
-            }
-            
             private void AddPrimitiveCommandToExecutionList()
             {
                 var command = CreateCommandFrom(_currentLineParts);
                 _commandsSequenceToExecute.Add(command);
-                
+
                 _currentLineNumber++;
             }
         }
