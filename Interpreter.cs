@@ -70,7 +70,7 @@ namespace KizhiPart2
 
         private bool TryExecute(PrimitiveCommand primitiveCommand)
         {
-            if (primitiveCommand.Name == "set" || IsMemoryContains(primitiveCommand.VariableName))
+            if (primitiveCommand.Name == "set" || MemoryContainsVariableWith(primitiveCommand.VariableName))
             {
                 var commandAction = _commandsActions[primitiveCommand.Name];
                 commandAction(primitiveCommand);
@@ -80,9 +80,9 @@ namespace KizhiPart2
             return false;
         }
 
-        private bool IsMemoryContains(string variableName)
+        private bool MemoryContainsVariableWith(string name)
         {
-            if (_memoryVariables.ContainsKey(variableName)) return true;
+            if (_memoryVariables.ContainsKey(name)) return true;
 
             _writer.WriteLine("Переменная отсутствует в памяти");
             return false;
