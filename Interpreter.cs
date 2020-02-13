@@ -114,7 +114,7 @@ namespace KizhiPart2
 
             private readonly List<PrimitiveCommand> _commandsSequenceToExecute = new List<PrimitiveCommand>();
 
-            private readonly Dictionary<string, int> _functionsAndTheirDefinitionLine =
+            private readonly Dictionary<string, int> _functionNamesAndTheirDefinitionLines =
                 new Dictionary<string, int>();
 
             public SourceCodeParser(string sourceCode)
@@ -157,19 +157,18 @@ namespace KizhiPart2
             private void SetFuncStartLine()
             {
                 var functionName = _currentLineParts[1];
-                _functionsAndTheirDefinitionLine.Add(functionName, _currentLineNumber);
+                _functionNamesAndTheirDefinitionLines.Add(functionName, _currentLineNumber);
                 _currentLineNumber++;
+                
                 while (_codeLines[_currentLineNumber].StartsWith("    "))
-                {
                     _currentLineNumber++;
-                }
             }
 
             private void AddFunctionCommandsToExecutionList()
             {
                 var functionName = _currentLineParts[1];
                 var functionCallLineNumber = _currentLineNumber;
-                var functionBodyLineNumber = _functionsAndTheirDefinitionLine[functionName] + 1;
+                var functionBodyLineNumber = _functionNamesAndTheirDefinitionLines[functionName] + 1;
                 _currentLineNumber = functionBodyLineNumber;
 
                 while (_codeLines[_currentLineNumber].StartsWith("    "))
