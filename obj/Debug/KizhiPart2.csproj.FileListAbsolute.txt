@@ -1,4 +1,3 @@
-C:\Users\Дима\Downloads\KizhiPart2.csproj\obj\Debug\KizhiPart2.csprojResolveAssemblyReference.cache
 C:\Users\Дима\Downloads\KizhiPart2.csproj\bin\Debug\KizhiPart2.exe.config
 C:\Users\Дима\Downloads\KizhiPart2.csproj\bin\Debug\KizhiPart2.exe
 C:\Users\Дима\Downloads\KizhiPart2.csproj\bin\Debug\KizhiPart2.pdb
@@ -7,3 +6,6 @@ C:\Users\Дима\Downloads\KizhiPart2.csproj\bin\Debug\nunit.framework.pdb
 C:\Users\Дима\Downloads\KizhiPart2.csproj\bin\Debug\nunit.framework.xml
 C:\Users\Дима\Downloads\KizhiPart2.csproj\obj\Debug\KizhiPart2.exe
 C:\Users\Дима\Downloads\KizhiPart2.csproj\obj\Debug\KizhiPart2.pdb
+C:\Users\Дима\Downloads\KizhiPart2.csproj\obj\Debug\KizhiPart2.csprojAssemblyReference.cache
+C:\Users\Дима\Downloads\KizhiPart2.csproj\obj\Debug\KizhiPart2.csproj.CopyComplete
+C:\Users\Дима\Downloads\KizhiPart2.csproj\bin\Debug\System.ValueTuple.dll

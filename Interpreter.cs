@@ -1,204 +1,232 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace KizhiPart2
 {
     public class Interpreter
     {
-        private readonly TextWriter _writer;
+        private bool _isSourceCodeStarts;
 
-        private readonly Dictionary<string, int> _memoryVariables = new Dictionary<string, int>();
+        private string[] _codeLines;
+        private int _currentLineNumber;
+        private string[] _currentLineParts;
 
-        private readonly Dictionary<string, Action<PrimitiveCommand>> _commandsActions =
-            new Dictionary<string, Action<PrimitiveCommand>>();
+        private readonly Dictionary<string, int> _functionNameToDefinitionLine = new Dictionary<string, int>();
 
-        private bool _sourceCodeStarts;
+        private readonly Stack<(string FunctionName, int CallLine)> _callStack = new Stack<(string, int)>();
 
-        private SourceCodeParser _sourceCodeParser;
+        private Command _commandForExecute;
+        private readonly CommandExecutor _commandExecutor;
 
         public Interpreter(TextWriter writer)
         {
-            _writer = writer;
-            SetupPrimitiveCommands();
-        }
-
-        private void SetupPrimitiveCommands()
-        {
-            _commandsActions.Add("set",
-                command => _memoryVariables[command.VariableName] = command.Value.Value);
-
-            _commandsActions.Add("sub",
-                command => _memoryVariables[command.VariableName] -= command.Value.Value);
-
-            _commandsActions.Add("rem",
-                command => _memoryVariables.Remove(command.VariableName));
-
-            _commandsActions.Add("print",
-                command => _writer.WriteLine(_memoryVariables[command.VariableName]));
+            _commandExecutor = new CommandExecutor(writer);
         }
 
         public void ExecuteLine(string command)
         {
-            if (_sourceCodeStarts)
+            if (_isSourceCodeStarts)
             {
-                _sourceCodeParser = new SourceCodeParser(command);
-                _sourceCodeStarts = false;
+                _codeLines = command.Split('\n').Where(line => !string.IsNullOrEmpty(line)).ToArray();
+                FindAllFunctionDefinitions();
+                _isSourceCodeStarts = false;
             }
 
             switch (command)
             {
                 case "set code":
-                    _sourceCodeStarts = true;
+                    _isSourceCodeStarts = true;
                     break;
                 case "run":
-                    var primitiveCommands = _sourceCodeParser.GetCommandsToExecute();
-                    Execute(primitiveCommands);
+                    StartInterpretation();
                     break;
             }
         }
 
-        private void Execute(List<PrimitiveCommand> primitiveCommands)
+        private void FindAllFunctionDefinitions()
         {
-            foreach (var command in primitiveCommands)
+            while (_currentLineNumber < _codeLines.Length)
             {
-                bool success = TryExecute(command);
-                if (!success)
-                    return;
+                if (_codeLines[_currentLineNumber].StartsWith("def"))
+                {
+                    _currentLineParts = _codeLines[_currentLineNumber].Split(' ');
+                    var funcName = _currentLineParts[1];
+                    _functionNameToDefinitionLine.Add(funcName, _currentLineNumber);
+                }
+
+                _currentLineNumber++;
+            }
+
+            _currentLineNumber = 0;
+        }
+
+        private void StartInterpretation()
+        {
+            var isPreviousCommandExecuted = true;
+
+            while (_currentLineNumber < _codeLines.Length && isPreviousCommandExecuted)
+            {
+                ParseCurrentCodeLine();
+
+                if (_commandForExecute != null)
+                    isPreviousCommandExecuted = _commandExecutor.TryExecute(_commandForExecute);
+
+                _commandForExecute = null;
             }
         }
 
-        private bool TryExecute(PrimitiveCommand primitiveCommand)
+        private void ParseCurrentCodeLine()
         {
-            if (primitiveCommand.Name == "set" || MemoryContainsVariableWith(primitiveCommand.VariableName))
+            if (_callStack.Count != 0)
+                ParseCurrentLineOfFunction();
+            else
+                ParseCommandOfCurrentLine();
+        }
+
+        private void ParseCurrentLineOfFunction()
+        {
+            var functionName = _callStack.Peek().FunctionName;
+            var definitionLine = _functionNameToDefinitionLine[functionName];
+
+            if (_currentLineNumber == definitionLine)
             {
-                var commandAction = _commandsActions[primitiveCommand.Name];
-                commandAction(primitiveCommand);
-                return true;
+                _currentLineNumber++;
             }
-
-            return false;
+            else if (_currentLineNumber < _codeLines.Length && _codeLines[_currentLineNumber].StartsWith("    "))
+            {
+                ParseCommandOfCurrentLine();
+            }
+            else
+            {
+                var executedFunction = _callStack.Pop();
+                _currentLineNumber = executedFunction.CallLine + 1;
+            }
         }
 
-        private bool MemoryContainsVariableWith(string name)
+        private void ParseCommandOfCurrentLine()
         {
-            if (_memoryVariables.ContainsKey(name)) return true;
+            _currentLineParts = _codeLines[_currentLineNumber].TrimStart().Split(' ');
+            var commandName = _currentLineParts[0];
 
-            _writer.WriteLine("Переменная отсутствует в памяти");
-            return false;
+            switch (commandName)
+            {
+                case "def":
+                    SkipFunctionDefinition();
+                    break;
+                case "call":
+                    var funcName = _currentLineParts[1];
+                    _callStack.Push((funcName, _currentLineNumber));
+                    _currentLineNumber = _functionNameToDefinitionLine[funcName];
+                    break;
+                default:
+                    _commandForExecute = CreateCurrentCommandFrom(_currentLineParts);
+                    _currentLineNumber++;
+                    break;
+            }
         }
 
-        private class PrimitiveCommand
+        private void SkipFunctionDefinition()
+        {
+            _currentLineNumber++;
+
+            while (_currentLineNumber < _codeLines.Length && _codeLines[_currentLineNumber].StartsWith("    "))
+                _currentLineNumber++;
+        }
+
+        private Command CreateCurrentCommandFrom(string[] commandParts)
+        {
+            if (commandParts.Length <= 2)
+                return new Command(commandParts[0], commandParts[1]);
+
+            var commandValue = int.Parse(commandParts[2]);
+            return new CommandWithValue(commandParts[0], commandParts[1], commandValue);
+        }
+
+        public class Command
         {
             public string Name { get; }
             public string VariableName { get; }
-            public int? Value { get; }
 
-            public PrimitiveCommand(string name, string variableName, int? value)
+            public Command(string name, string variableName)
             {
                 Name = name;
                 VariableName = variableName;
-                Value = value;
             }
 
             // для удобства при дебаге
+            public override string ToString() => $"{Name} {VariableName}";
+        }
+
+        private class CommandWithValue : Command
+        {
+            public int Value { get; }
+
+            public CommandWithValue(string name, string variableName, int value)
+                : base(name, variableName)
+            {
+                Value = value;
+            }
+
             public override string ToString() => $"{Name} {VariableName} {Value}";
         }
 
-        private class SourceCodeParser
+        private class CommandExecutor
         {
-            private readonly string _sourceCode;
-            private string[] _codeLines;
-            private int _currentLineNumber;
-            private string[] _currentLineParts;
+            private readonly TextWriter _writer;
 
-            private readonly List<PrimitiveCommand> _commandsSequenceToExecute = new List<PrimitiveCommand>();
+            private readonly Dictionary<string, int> _variableNameToValue = new Dictionary<string, int>();
 
-            private readonly Dictionary<string, int> _functionNamesAndTheirDefinitionLines =
-                new Dictionary<string, int>();
-
-            public SourceCodeParser(string sourceCode)
+            public CommandExecutor(TextWriter writer)
             {
-                _sourceCode = sourceCode;
+                _writer = writer;
             }
 
-            public List<PrimitiveCommand> GetCommandsToExecute()
+            public bool TryExecute(Command command)
             {
-                _codeLines = _sourceCode.Split('\n');
+                if (command.Name != "set" && !MemoryContainsVariableWithName(command.VariableName))
+                    return false;
 
-                while (_currentLineNumber < _codeLines.Length)
-                {
-                    var currentLine = _codeLines[_currentLineNumber];
-                    _currentLineParts = currentLine.Split(' ');
-                    var commandNameOfCurrentLine = _currentLineParts[0];
+                if (command is CommandWithValue valueCommand)
+                    Execute(valueCommand);
+                else
+                    Execute(command);
 
-                    ParseCommandWithName(commandNameOfCurrentLine);
-                }
-
-                return _commandsSequenceToExecute;
+                return true;
             }
 
-            private void ParseCommandWithName(string commandName)
+            private bool MemoryContainsVariableWithName(string name)
             {
-                switch (commandName)
+                if (_variableNameToValue.ContainsKey(name)) return true;
+
+                _writer.WriteLine("Переменная отсутствует в памяти");
+                return false;
+            }
+
+            private void Execute(CommandWithValue valueCommand)
+            {
+                switch (valueCommand.Name)
                 {
-                    case "def":
-                        SetFuncStartLine();
+                    case "set":
+                        _variableNameToValue[valueCommand.VariableName] = valueCommand.Value;
                         break;
-                    case "call":
-                        AddFunctionCommandsToExecutionList();
-                        break;
-                    default:
-                        AddPrimitiveCommandToExecutionList();
+                    case "sub":
+                        _variableNameToValue[valueCommand.VariableName] -= valueCommand.Value;
                         break;
                 }
             }
 
-            private void SetFuncStartLine()
+            private void Execute(Command command)
             {
-                var functionName = _currentLineParts[1];
-                _functionNamesAndTheirDefinitionLines.Add(functionName, _currentLineNumber);
-                _currentLineNumber++;
-                
-                while (_codeLines[_currentLineNumber].StartsWith("    "))
-                    _currentLineNumber++;
-            }
-
-            private void AddFunctionCommandsToExecutionList()
-            {
-                var functionName = _currentLineParts[1];
-                var functionCallLineNumber = _currentLineNumber;
-                var functionBodyLineNumber = _functionNamesAndTheirDefinitionLines[functionName] + 1;
-                _currentLineNumber = functionBodyLineNumber;
-
-                while (_codeLines[_currentLineNumber].StartsWith("    "))
+                switch (command.Name)
                 {
-                    var currentCommand = _codeLines[_currentLineNumber].TrimStart();
-                    var currentCommandParts = currentCommand.Split(' ');
-                    var command = CreateCommandFrom(currentCommandParts);
-                    _commandsSequenceToExecute.Add(command);
-
-                    _currentLineNumber++;
+                    case "rem":
+                        _variableNameToValue.Remove(command.VariableName);
+                        break;
+                    case "print":
+                        _writer.WriteLine(_variableNameToValue[command.VariableName]);
+                        break;
                 }
-
-                _currentLineNumber = functionCallLineNumber + 1;
-            }
-
-            private PrimitiveCommand CreateCommandFrom(string[] commandParts)
-            {
-                int? commandValue = null;
-                if (commandParts.Length > 2)
-                    commandValue = int.Parse(commandParts[2]);
-
-                return new PrimitiveCommand(commandParts[0], commandParts[1], commandValue);
-            }
-
-            private void AddPrimitiveCommandToExecutionList()
-            {
-                var command = CreateCommandFrom(_currentLineParts);
-                _commandsSequenceToExecute.Add(command);
-
-                _currentLineNumber++;
             }
         }
     }
