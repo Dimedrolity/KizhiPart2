@@ -51,8 +51,8 @@ namespace KizhiPart2
                 if (_codeLines[_currentLineNumber].StartsWith("def"))
                 {
                     _currentLineParts = _codeLines[_currentLineNumber].Split(' ');
-                    var funcName = _currentLineParts[1];
-                    _functionNameToDefinitionLine.Add(funcName, _currentLineNumber);
+                    var functionName = _currentLineParts[1];
+                    _functionNameToDefinitionLine.Add(functionName, _currentLineNumber);
                 }
 
                 _currentLineNumber++;
