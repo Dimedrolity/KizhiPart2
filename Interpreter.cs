@@ -146,7 +146,7 @@ namespace KizhiPart2
             return new CommandWithValue(commandParts[0], commandParts[1], commandValue);
         }
 
-        public class Command
+        private class Command
         {
             public string Name { get; }
             public string VariableName { get; }
