@@ -11,6 +11,9 @@ namespace KizhiPart2
         private string[] _codeLines;
         private int _currentLineNumber;
         private string[] _currentLineParts;
+        
+        private bool IsCurrentLineInsideCode => _currentLineNumber < _codeLines.Length;
+        private string CurrentLineOfCode => _codeLines[_currentLineNumber];
 
         private readonly Dictionary<string, int> _functionNameToDefinitionLine = new Dictionary<string, int>();
 
@@ -46,11 +49,11 @@ namespace KizhiPart2
 
         private void FindAllFunctionDefinitions()
         {
-            while (_currentLineNumber < _codeLines.Length)
+            while (IsCurrentLineInsideCode)
             {
-                if (_codeLines[_currentLineNumber].StartsWith("def"))
+                if (CurrentLineOfCode.StartsWith("def"))
                 {
-                    _currentLineParts = _codeLines[_currentLineNumber].Split(' ');
+                    _currentLineParts = CurrentLineOfCode.Split(' ');
                     var functionName = _currentLineParts[1];
                     _functionNameToDefinitionLine.Add(functionName, _currentLineNumber);
                 }
@@ -65,7 +68,7 @@ namespace KizhiPart2
         {
             var isPreviousCommandExecuted = true;
 
-            while (_currentLineNumber < _codeLines.Length && isPreviousCommandExecuted)
+            while (IsCurrentLineInsideCode && isPreviousCommandExecuted)
             {
                 ParseCurrentCodeLine();
 
@@ -93,7 +96,7 @@ namespace KizhiPart2
             {
                 _currentLineNumber++;
             }
-            else if (_currentLineNumber < _codeLines.Length && _codeLines[_currentLineNumber].StartsWith("    "))
+            else if (IsCurrentLineInsideCode && CurrentLineOfCode.StartsWith("    "))
             {
                 ParseCommandOfCurrentLine();
             }
@@ -106,7 +109,7 @@ namespace KizhiPart2
 
         private void ParseCommandOfCurrentLine()
         {
-            _currentLineParts = _codeLines[_currentLineNumber].TrimStart().Split(' ');
+            _currentLineParts = CurrentLineOfCode.TrimStart().Split(' ');
             var commandName = _currentLineParts[0];
 
             switch (commandName)
@@ -130,7 +133,7 @@ namespace KizhiPart2
         {
             _currentLineNumber++;
 
-            while (_currentLineNumber < _codeLines.Length && _codeLines[_currentLineNumber].StartsWith("    "))
+            while (IsCurrentLineInsideCode && CurrentLineOfCode.StartsWith("    "))
                 _currentLineNumber++;
         }
 
