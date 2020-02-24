@@ -11,7 +11,7 @@ namespace KizhiPart2
         private string[] _codeLines;
         private int _currentLineNumber;
         private string[] _currentLineParts;
-        
+
         private bool IsCurrentLineInsideCode => _currentLineNumber < _codeLines.Length;
         private string CurrentLineOfCode => _codeLines[_currentLineNumber];
 
