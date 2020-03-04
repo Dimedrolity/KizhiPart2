@@ -48,25 +48,31 @@ namespace KizhiPart2
 
             if (_codeLines != null && !IsCurrentLineInsideCode && _callStack.Count == 0)
                 PrepareForNextRun();
-        }
 
-        private void FindAllFunctionDefinitions()
-        {
-            while (IsCurrentLineInsideCode)
+
+            void FindAllFunctionDefinitions()
             {
-                if (CurrentLineOfCode.StartsWith("def"))
+                while (IsCurrentLineInsideCode)
                 {
-                    _currentLineParts = CurrentLineOfCode.Split(' ');
-                    var functionName = _currentLineParts[1];
-                    _functionNameToDefinitionLine[functionName] = _currentLineNumber;
+                    if (CurrentLineOfCode.StartsWith("def"))
+                    {
+                        _currentLineParts = CurrentLineOfCode.Split(' ');
+                        var functionName = _currentLineParts[1];
+                        _functionNameToDefinitionLine[functionName] = _currentLineNumber;
+                    }
+
+                    _currentLineNumber++;
                 }
 
-                _currentLineNumber++;
+                _currentLineNumber = 0;
             }
 
-            _currentLineNumber = 0;
+            void PrepareForNextRun()
+            {
+                _currentLineNumber = 0;
+                _commandExecutor.ClearMemory();
+            }
         }
-
 
         private void Run()
         {
@@ -122,41 +128,40 @@ namespace KizhiPart2
                     SkipFunctionDefinition();
                     break;
                 case "call":
-                    var funcName = _currentLineParts[1];
-                    _callStack.Push((funcName, _currentLineNumber));
-                    _currentLineNumber = _functionNameToDefinitionLine[funcName];
+                    PushFunctionToStackAndGoToDefinition();
                     break;
                 default:
-                    _commandForExecute = CreateCurrentCommandFrom(_currentLineParts);
+                    _commandForExecute = CreateCommandFromCurrentLine();
                     _currentLineNumber++;
                     break;
             }
-        }
 
-        private void SkipFunctionDefinition()
-        {
-            _currentLineNumber++;
-
-            while (IsCurrentLineInsideCode && CurrentLineOfCode.StartsWith("    "))
+            
+            void SkipFunctionDefinition()
+            {
                 _currentLineNumber++;
+
+                while (IsCurrentLineInsideCode && CurrentLineOfCode.StartsWith("    "))
+                    _currentLineNumber++;
+            }
+            
+            void PushFunctionToStackAndGoToDefinition()
+            {
+                var funcName = _currentLineParts[1];
+                _callStack.Push((funcName, _currentLineNumber));
+                _currentLineNumber = _functionNameToDefinitionLine[funcName];
+            }
+            
+            Command CreateCommandFromCurrentLine()
+            {
+                if (_currentLineParts.Length <= 2)
+                    return new Command(_currentLineParts[0], _currentLineParts[1]);
+
+                var commandValue = int.Parse(_currentLineParts[2]);
+                return new CommandWithValue(_currentLineParts[0], _currentLineParts[1], commandValue);
+            }
         }
-
-
-        private Command CreateCurrentCommandFrom(string[] commandParts)
-        {
-            if (commandParts.Length <= 2)
-                return new Command(commandParts[0], commandParts[1]);
-
-            var commandValue = int.Parse(commandParts[2]);
-            return new CommandWithValue(commandParts[0], commandParts[1], commandValue);
-        }
-
-        private void PrepareForNextRun()
-        {
-            _currentLineNumber = 0;
-            _commandExecutor.ClearMemory();
-        }
-
+        
         private class Command
         {
             public string Name { get; }
