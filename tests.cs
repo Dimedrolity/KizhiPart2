@@ -236,5 +236,32 @@ namespace KizhiPart2
         //     interpreter.ExecuteLine("end code");
         //     interpreter.ExecuteLine("run");
         // }
+        
+        [Test]
+        public void DoubleRunAndRunAfterResetBuffers()
+        {
+            var path = @"D:\testDoubleRunAndRunAfterResetBuffers.txt";
+
+            var sw = new StreamWriter(path);
+            sw.AutoFlush = true;
+
+            var interpreter = new Interpreter(sw);
+
+            interpreter.ExecuteLine("set code");
+            interpreter.ExecuteLine("def test\n    set a 5\n    sub a 3\n    print a\ncall test");
+            interpreter.ExecuteLine("end code");
+            interpreter.ExecuteLine("run");
+            interpreter.ExecuteLine("run");
+
+            sw.Close();
+            var sr = new StreamReader(path);
+            var line = sr.ReadLine();
+            var line2 = sr.ReadLine();
+            var line3 = sr.ReadLine();
+
+
+            Assert.AreEqual(new[] {"2", "2", null},
+                new[] {line, line2, line3, });
+        }
     }
 }

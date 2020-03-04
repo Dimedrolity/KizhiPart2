@@ -42,9 +42,12 @@ namespace KizhiPart2
                     _isSourceCodeStarts = true;
                     break;
                 case "run":
-                    StartInterpretation();
+                    Run();
                     break;
             }
+
+            if (_codeLines != null && !IsCurrentLineInsideCode && _callStack.Count == 0)
+                PrepareForNextRun();
         }
 
         private void FindAllFunctionDefinitions()
@@ -55,7 +58,7 @@ namespace KizhiPart2
                 {
                     _currentLineParts = CurrentLineOfCode.Split(' ');
                     var functionName = _currentLineParts[1];
-                    _functionNameToDefinitionLine.Add(functionName, _currentLineNumber);
+                    _functionNameToDefinitionLine[functionName] = _currentLineNumber;
                 }
 
                 _currentLineNumber++;
@@ -64,7 +67,8 @@ namespace KizhiPart2
             _currentLineNumber = 0;
         }
 
-        private void StartInterpretation()
+
+        private void Run()
         {
             var isPreviousCommandExecuted = true;
 
@@ -137,6 +141,7 @@ namespace KizhiPart2
                 _currentLineNumber++;
         }
 
+
         private Command CreateCurrentCommandFrom(string[] commandParts)
         {
             if (commandParts.Length <= 2)
@@ -144,6 +149,12 @@ namespace KizhiPart2
 
             var commandValue = int.Parse(commandParts[2]);
             return new CommandWithValue(commandParts[0], commandParts[1], commandValue);
+        }
+
+        private void PrepareForNextRun()
+        {
+            _currentLineNumber = 0;
+            _commandExecutor.ClearMemory();
         }
 
         private class Command
@@ -230,6 +241,11 @@ namespace KizhiPart2
                         _writer.WriteLine(_variableNameToValue[command.VariableName]);
                         break;
                 }
+            }
+
+            public void ClearMemory()
+            {
+                _variableNameToValue.Clear();
             }
         }
     }
