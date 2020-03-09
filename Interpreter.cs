@@ -136,7 +136,7 @@ namespace KizhiPart2
                     break;
             }
 
-            
+
             void SkipFunctionDefinition()
             {
                 _currentLineNumber++;
@@ -144,14 +144,14 @@ namespace KizhiPart2
                 while (IsCurrentLineInsideCode && CurrentLineOfCode.StartsWith("    "))
                     _currentLineNumber++;
             }
-            
+
             void PushFunctionToStackAndGoToDefinition()
             {
                 var funcName = _currentLineParts[1];
                 _callStack.Push((funcName, _currentLineNumber));
                 _currentLineNumber = _functionNameToDefinitionLine[funcName];
             }
-            
+
             Command CreateCommandFromCurrentLine()
             {
                 if (_currentLineParts.Length <= 2)
@@ -161,97 +161,97 @@ namespace KizhiPart2
                 return new CommandWithValue(_currentLineParts[0], _currentLineParts[1], commandValue);
             }
         }
-        
-        private class Command
+    }
+
+    public class Command
+    {
+        public string Name { get; }
+        public string VariableName { get; }
+
+        public Command(string name, string variableName)
         {
-            public string Name { get; }
-            public string VariableName { get; }
-
-            public Command(string name, string variableName)
-            {
-                Name = name;
-                VariableName = variableName;
-            }
-
-            // для удобства при дебаге
-            public override string ToString() => $"{Name} {VariableName}";
+            Name = name;
+            VariableName = variableName;
         }
 
-        private class CommandWithValue : Command
+        // для удобства при дебаге
+        public override string ToString() => $"{Name} {VariableName}";
+    }
+
+    public class CommandWithValue : Command
+    {
+        public int Value { get; }
+
+        public CommandWithValue(string name, string variableName, int value)
+            : base(name, variableName)
         {
-            public int Value { get; }
-
-            public CommandWithValue(string name, string variableName, int value)
-                : base(name, variableName)
-            {
-                Value = value;
-            }
-
-            public override string ToString() => $"{Name} {VariableName} {Value}";
+            Value = value;
         }
 
-        private class CommandExecutor
+        public override string ToString() => $"{Name} {VariableName} {Value}";
+    }
+
+    public class CommandExecutor
+    {
+        private readonly TextWriter _writer;
+
+        private readonly Dictionary<string, int> _variableNameToValue = new Dictionary<string, int>();
+
+        public CommandExecutor(TextWriter writer)
         {
-            private readonly TextWriter _writer;
+            _writer = writer;
+        }
 
-            private readonly Dictionary<string, int> _variableNameToValue = new Dictionary<string, int>();
-
-            public CommandExecutor(TextWriter writer)
-            {
-                _writer = writer;
-            }
-
-            public bool TryExecute(Command command)
-            {
-                if (command.Name != "set" && !MemoryContainsVariableWithName(command.VariableName))
-                    return false;
-
-                if (command is CommandWithValue valueCommand)
-                    Execute(valueCommand);
-                else
-                    Execute(command);
-
-                return true;
-            }
-
-            private bool MemoryContainsVariableWithName(string name)
-            {
-                if (_variableNameToValue.ContainsKey(name)) return true;
-
-                _writer.WriteLine("Переменная отсутствует в памяти");
+        public bool TryExecute(Command command)
+        {
+            if (command.Name != "set" && !MemoryContainsVariableWithName(command.VariableName))
                 return false;
-            }
 
-            private void Execute(CommandWithValue valueCommand)
-            {
-                switch (valueCommand.Name)
-                {
-                    case "set":
-                        _variableNameToValue[valueCommand.VariableName] = valueCommand.Value;
-                        break;
-                    case "sub":
-                        _variableNameToValue[valueCommand.VariableName] -= valueCommand.Value;
-                        break;
-                }
-            }
+            if (command is CommandWithValue valueCommand)
+                Execute(valueCommand);
+            else
+                Execute(command);
 
-            private void Execute(Command command)
-            {
-                switch (command.Name)
-                {
-                    case "rem":
-                        _variableNameToValue.Remove(command.VariableName);
-                        break;
-                    case "print":
-                        _writer.WriteLine(_variableNameToValue[command.VariableName]);
-                        break;
-                }
-            }
+            return true;
+        }
 
-            public void ClearMemory()
+        private bool MemoryContainsVariableWithName(string name)
+        {
+            if (_variableNameToValue.ContainsKey(name)) return true;
+
+            _writer.WriteLine("Переменная отсутствует в памяти");
+            return false;
+        }
+
+        private void Execute(CommandWithValue valueCommand)
+        {
+            switch (valueCommand.Name)
             {
-                _variableNameToValue.Clear();
+                case "set":
+                    _variableNameToValue[valueCommand.VariableName] = valueCommand.Value;
+                    break;
+                case "sub":
+                    _variableNameToValue[valueCommand.VariableName] -= valueCommand.Value;
+                    break;
             }
+        }
+
+        private void Execute(Command command)
+        {
+            switch (command.Name)
+            {
+                case "rem":
+                    _variableNameToValue.Remove(command.VariableName);
+                    break;
+                case "print":
+                    _writer.WriteLine(_variableNameToValue[command.VariableName]);
+                    break;
+            }
+        }
+
+        public void ClearMemory()
+        {
+            _variableNameToValue.Clear();
         }
     }
 }
