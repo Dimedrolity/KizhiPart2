@@ -163,7 +163,7 @@ namespace KizhiPart2
         }
     }
 
-    public class Command
+    internal class Command
     {
         public string Name { get; }
         public string VariableName { get; }
@@ -178,7 +178,7 @@ namespace KizhiPart2
         public override string ToString() => $"{Name} {VariableName}";
     }
 
-    public class CommandWithValue : Command
+    internal class CommandWithValue : Command
     {
         public int Value { get; }
 
@@ -191,7 +191,7 @@ namespace KizhiPart2
         public override string ToString() => $"{Name} {VariableName} {Value}";
     }
 
-    public class CommandExecutor
+    internal class CommandExecutor
     {
         private readonly TextWriter _writer;
 
