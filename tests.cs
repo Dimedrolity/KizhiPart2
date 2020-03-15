@@ -11,8 +11,7 @@ namespace KizhiPart2
         public void SimpleTest()
         {
             var path = @"D:\testSimple.txt";
-            var sw = new StreamWriter(path);
-            sw.AutoFlush = true;
+            var sw = new StreamWriter(path) {AutoFlush = true};
             var interpreter = new Interpreter(sw);
             interpreter.ExecuteLine("set code");
             interpreter.ExecuteLine("set a 10\nprint a\nprint a\nsub a 4\nprint a\nrem a");
@@ -32,8 +31,7 @@ namespace KizhiPart2
         public void AfterRem()
         {
             var path = @"D:\testAfterRem.txt";
-            var sw = new StreamWriter(path);
-            sw.AutoFlush = true;
+            var sw = new StreamWriter(path) {AutoFlush = true};
 
             var interpreter = new Interpreter(sw);
 
@@ -55,8 +53,7 @@ namespace KizhiPart2
         {
             var path = @"D:\testmyfuc.txt";
 
-            var sw = new StreamWriter(path);
-            sw.AutoFlush = true;
+            var sw = new StreamWriter(path) {AutoFlush = true};
 
             var interpreter = new Interpreter(sw);
 
@@ -80,8 +77,7 @@ namespace KizhiPart2
         {
             var path = @"D:\testexfunc.txt";
 
-            var sw = new StreamWriter(path);
-            sw.AutoFlush = true;
+            var sw = new StreamWriter(path) {AutoFlush = true};
 
             var interpreter = new Interpreter(sw);
 
@@ -102,29 +98,31 @@ namespace KizhiPart2
         public void DefinitionBelowCall()
         {
             var path = @"D:\testDefBelowCall.txt";
-            var sw = new StreamWriter(path);
-            sw.AutoFlush = true;
+            
+            var sw = new StreamWriter(path) {AutoFlush = true};
+
             var interpreter = new Interpreter(sw);
 
             interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine("set a 3\ncall f\ndef f\n    print a");
+            interpreter.ExecuteLine("call test\nprint a\ndef test\n    set a 5");
             interpreter.ExecuteLine("end code");
             interpreter.ExecuteLine("run");
 
             sw.Close();
             var sr = new StreamReader(path);
             var line = sr.ReadLine();
+            var line2 = sr.ReadLine();
 
-            Assert.AreEqual(new[] {"3"},
-                new[] {line});
+
+            Assert.AreEqual(new[] {"5", null},
+                new[] {line, line2,});
         }
 
         [Test]
-        public void DontWriteAfterNotFound()
+        public void DontExecuteAfterNotFound()
         {
-            var path = @"D:\testDontWriteAfterNotFound.txt";
-            var sw = new StreamWriter(path);
-            sw.AutoFlush = true;
+            var path = @"D:\testDontExecuteAfterNotFound.txt";
+            var sw = new StreamWriter(path) {AutoFlush = true};
             var interpreter = new Interpreter(sw);
 
             interpreter.ExecuteLine("set code");
@@ -135,7 +133,8 @@ namespace KizhiPart2
             interpreter.ExecuteLine("end code");
 
             interpreter.ExecuteLine("run");
-
+            interpreter.ExecuteLine("run");
+            interpreter.ExecuteLine("run");
 
             sw.Close();
             var sr = new StreamReader(path);
@@ -150,8 +149,7 @@ namespace KizhiPart2
         {
             var path = @"D:\testFuncCallFunc.txt";
 
-            var sw = new StreamWriter(path);
-            sw.AutoFlush = true;
+            var sw = new StreamWriter(path) {AutoFlush = true};
 
             var interpreter = new Interpreter(sw);
 
@@ -159,16 +157,15 @@ namespace KizhiPart2
             interpreter.ExecuteLine(
                 "def one\n" +
                 "    set a 15\n" +
-                "    print a\n" +
-                "    call two\n" +
                 "    sub a 5\n" +
-                "def two\n" +
-                "    sub a 10\n" +
+                "    call two\n" +
                 "    print a\n" +
+                "def two\n" +
+                "    sub a 5\n" +
+                "    sub a 5\n" +
                 "call one");
             interpreter.ExecuteLine("end code");
             interpreter.ExecuteLine("run");
-            interpreter.ExecuteLine("print trace");
 
 
             sw.Close();
@@ -177,44 +174,37 @@ namespace KizhiPart2
             var line2 = sr.ReadLine();
 
 
-            Assert.AreEqual(new[] {"15", "5"},
+            Assert.AreEqual(new[] {"0", null},
                 new[] {line, line2});
         }
 
         [Test]
-        public void FuncCallFuncHitry()
+        public void DoubleRunAndRunAfterResetBuffers()
         {
-            var path = @"D:\testFuncCallFuncHitry.txt";
+            var path = @"D:\testDoubleRunAndRunAfterResetBuffers.txt";
 
-            var sw = new StreamWriter(path);
-            sw.AutoFlush = true;
+            var sw = new StreamWriter(path) {AutoFlush = true};
 
             var interpreter = new Interpreter(sw);
 
             interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine(
-                "def one\n" +
-                "    set a 15\n" +
-                "    sub a 5\n" +
-                "    call two\n" +
-                "    print a\n" +
-                "def two\n" +
-                "    sub a 5\n" +
-                "    sub a 5\n" +
-                "call one");
+            interpreter.ExecuteLine("def test\n    set a 5\n    sub a 3\n    print a\ncall test");
             interpreter.ExecuteLine("end code");
             interpreter.ExecuteLine("run");
-
+            interpreter.ExecuteLine("run");
 
             sw.Close();
             var sr = new StreamReader(path);
             var line = sr.ReadLine();
+            var line2 = sr.ReadLine();
+            var line3 = sr.ReadLine();
 
 
-            Assert.AreEqual("0",
-                line);
+            Assert.AreEqual(new[] {"2", "2", null},
+                new[] {line, line2, line3,});
         }
-        
+
+
         //WORKS
         // [Test]
         // public void Recursive()
@@ -236,32 +226,5 @@ namespace KizhiPart2
         //     interpreter.ExecuteLine("end code");
         //     interpreter.ExecuteLine("run");
         // }
-        
-        [Test]
-        public void DoubleRunAndRunAfterResetBuffers()
-        {
-            var path = @"D:\testDoubleRunAndRunAfterResetBuffers.txt";
-
-            var sw = new StreamWriter(path);
-            sw.AutoFlush = true;
-
-            var interpreter = new Interpreter(sw);
-
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine("def test\n    set a 5\n    sub a 3\n    print a\ncall test");
-            interpreter.ExecuteLine("end code");
-            interpreter.ExecuteLine("run");
-            interpreter.ExecuteLine("run");
-
-            sw.Close();
-            var sr = new StreamReader(path);
-            var line = sr.ReadLine();
-            var line2 = sr.ReadLine();
-            var line3 = sr.ReadLine();
-
-
-            Assert.AreEqual(new[] {"2", "2", null},
-                new[] {line, line2, line3, });
-        }
     }
 }

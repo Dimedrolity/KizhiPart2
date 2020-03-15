@@ -12,6 +12,7 @@ namespace KizhiPart2
         private int _currentLineNumber;
         private string[] _currentLineParts;
 
+        private bool IsCodeEnd => _codeLines != null && !IsCurrentLineInsideCode && _callStack.Count == 0;
         private bool IsCurrentLineInsideCode => _currentLineNumber < _codeLines.Length;
         private string CurrentLineOfCode => _codeLines[_currentLineNumber];
 
@@ -21,6 +22,7 @@ namespace KizhiPart2
 
         private Command _commandForExecute;
         private readonly CommandExecutor _commandExecutor;
+        private bool _isPreviousCommandExecuted = true;
 
         public Interpreter(TextWriter writer)
         {
@@ -31,7 +33,9 @@ namespace KizhiPart2
         {
             if (_isSourceCodeStarts)
             {
-                _codeLines = command.Split('\n').Where(line => !string.IsNullOrEmpty(line)).ToArray();
+                _codeLines = command.Split('\n')
+                    .Where(line => !string.IsNullOrEmpty(line)).ToArray();
+
                 FindAllFunctionDefinitions();
                 _isSourceCodeStarts = false;
             }
@@ -46,9 +50,8 @@ namespace KizhiPart2
                     break;
             }
 
-            if (_codeLines != null && !IsCurrentLineInsideCode && _callStack.Count == 0)
-                PrepareForNextRun();
-
+            if (IsCodeEnd)
+                Reset();
 
             void FindAllFunctionDefinitions()
             {
@@ -67,24 +70,24 @@ namespace KizhiPart2
                 _currentLineNumber = 0;
             }
 
-            void PrepareForNextRun()
+            void Reset()
             {
                 _currentLineNumber = 0;
+                _isPreviousCommandExecuted = true;
                 _commandExecutor.ClearMemory();
             }
         }
 
         private void Run()
         {
-            var isPreviousCommandExecuted = true;
-
-            while (IsCurrentLineInsideCode && isPreviousCommandExecuted)
+            while (_isPreviousCommandExecuted && !IsCodeEnd)
             {
                 ParseCurrentCodeLine();
 
-                if (_commandForExecute != null)
-                    isPreviousCommandExecuted = _commandExecutor.TryExecute(_commandForExecute);
+                if (_commandForExecute == null)
+                    return;
 
+                _isPreviousCommandExecuted = _commandExecutor.TryExecute(_commandForExecute);
                 _commandForExecute = null;
             }
         }
