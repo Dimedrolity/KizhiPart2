@@ -85,7 +85,7 @@ namespace KizhiPart2
                 ParseCurrentCodeLine();
 
                 if (_commandForExecute == null)
-                    return;
+                    continue;
 
                 _isPreviousCommandExecuted = _commandExecutor.TryExecute(_commandForExecute);
                 _commandForExecute = null;
