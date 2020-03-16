@@ -133,8 +133,6 @@ namespace KizhiPart2
             interpreter.ExecuteLine("end code");
 
             interpreter.ExecuteLine("run");
-            interpreter.ExecuteLine("run");
-            interpreter.ExecuteLine("run");
 
             sw.Close();
             var sr = new StreamReader(path);
@@ -179,9 +177,9 @@ namespace KizhiPart2
         }
 
         [Test]
-        public void DoubleRunAndRunAfterResetBuffers()
+        public void RunAndRunAfterResetBuffers()
         {
-            var path = @"D:\testDoubleRunAndRunAfterResetBuffers.txt";
+            var path = @"D:\testRunAndRunAfterResetBuffers.txt";
 
             var sw = new StreamWriter(path) {AutoFlush = true};
 
@@ -201,6 +199,32 @@ namespace KizhiPart2
 
 
             Assert.AreEqual(new[] {"2", "2", null},
+                new[] {line, line2, line3,});
+        }
+        
+        [Test]
+        public void RunAndRunAfterResetBuffersWithError()
+        {
+            var path = @"D:\testRunAndRunAfterResetBuffersWithError.txt";
+
+            var sw = new StreamWriter(path) {AutoFlush = true};
+
+            var interpreter = new Interpreter(sw);
+
+            interpreter.ExecuteLine("set code");
+            interpreter.ExecuteLine("sub a\nset a 4");
+            interpreter.ExecuteLine("end code");
+            interpreter.ExecuteLine("run");
+            interpreter.ExecuteLine("run");
+
+            sw.Close();
+            var sr = new StreamReader(path);
+            var line = sr.ReadLine();
+            var line2 = sr.ReadLine();
+            var line3 = sr.ReadLine();
+
+
+            Assert.AreEqual(new[] {"Переменная отсутствует в памяти", "Переменная отсутствует в памяти", null},
                 new[] {line, line2, line3,});
         }
 

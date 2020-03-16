@@ -50,7 +50,7 @@ namespace KizhiPart2
                     break;
             }
 
-            if (IsCodeEnd)
+            if (IsCodeEnd || !_isPreviousCommandExecuted)
                 Reset();
 
             
