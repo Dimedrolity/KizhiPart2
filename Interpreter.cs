@@ -53,6 +53,7 @@ namespace KizhiPart2
             if (IsCodeEnd)
                 Reset();
 
+            
             void FindAllFunctionDefinitions()
             {
                 while (IsCurrentLineInsideCode)
@@ -150,9 +151,9 @@ namespace KizhiPart2
 
             void PushFunctionToStackAndGoToDefinition()
             {
-                var funcName = _currentLineParts[1];
-                _callStack.Push((funcName, _currentLineNumber));
-                _currentLineNumber = _functionNameToDefinitionLine[funcName];
+                var functionName = _currentLineParts[1];
+                _callStack.Push((functionName, _currentLineNumber));
+                _currentLineNumber = _functionNameToDefinitionLine[functionName];
             }
 
             Command CreateCommandFromCurrentLine()
