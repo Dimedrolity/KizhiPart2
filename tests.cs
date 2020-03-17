@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using NUnit.Framework;
 
@@ -23,8 +24,9 @@ namespace KizhiPart2
             var line = sr.ReadLine();
             var line2 = sr.ReadLine();
             var line3 = sr.ReadLine();
-            Assert.AreEqual(new[] {"10", "10", "6"},
-                new[] {line, line2, line3});
+            var line4 = sr.ReadLine();
+            Assert.AreEqual(new[] {"10", "10", "6", null},
+                new[] {line, line2, line3, line4});
         }
 
         [Test]
@@ -43,9 +45,9 @@ namespace KizhiPart2
             sw.Close();
             var sr = new StreamReader(path);
             var line = sr.ReadLine();
+            var line2 = sr.ReadLine();
 
-            Assert.AreEqual("Переменная отсутствует в памяти",
-                line);
+            Assert.AreEqual(new[] {"Переменная отсутствует в памяти", null}, new[] {line, line2});
         }
 
         [Test]
@@ -66,9 +68,10 @@ namespace KizhiPart2
             var sr = new StreamReader(path);
             var line = sr.ReadLine();
             var line2 = sr.ReadLine();
+            var line3 = sr.ReadLine();
 
-            Assert.AreEqual(new[] {"10", "10"},
-                new[] {line, line2});
+            Assert.AreEqual(new[] {"10", "10", null},
+                new[] {line, line2, line3});
         }
 
 
@@ -89,16 +92,16 @@ namespace KizhiPart2
             sw.Close();
             var sr = new StreamReader(path);
             var line = sr.ReadLine();
+            var line2 = sr.ReadLine();
 
-            Assert.AreEqual("7",
-                line);
+            Assert.AreEqual(new[] {"7", null}, new[] {line, line2});
         }
 
         [Test]
         public void DefinitionBelowCall()
         {
             var path = @"D:\testDefBelowCall.txt";
-            
+
             var sw = new StreamWriter(path) {AutoFlush = true};
 
             var interpreter = new Interpreter(sw);
@@ -143,6 +146,21 @@ namespace KizhiPart2
         }
 
         [Test]
+        public void VariableValueIsZero()
+        {
+            var path = @"testVariableValueIsZero.txt";
+            var sw = new StreamWriter(path) {AutoFlush = true};
+            var interpreter = new Interpreter(sw);
+
+            interpreter.ExecuteLine("set code");
+            interpreter.ExecuteLine("set m 0");
+            interpreter.ExecuteLine("end code");
+
+            Assert.Throws<ArgumentException>(() => interpreter.ExecuteLine("run"));
+            sw.Close();
+        }
+
+        [Test]
         public void FuncCallFunc()
         {
             var path = @"D:\testFuncCallFunc.txt";
@@ -154,7 +172,7 @@ namespace KizhiPart2
             interpreter.ExecuteLine("set code");
             interpreter.ExecuteLine(
                 "def one\n" +
-                "    set a 15\n" +
+                "    set a 20\n" +
                 "    sub a 5\n" +
                 "    call two\n" +
                 "    print a\n" +
@@ -172,7 +190,7 @@ namespace KizhiPart2
             var line2 = sr.ReadLine();
 
 
-            Assert.AreEqual(new[] {"0", null},
+            Assert.AreEqual(new[] {"5", null},
                 new[] {line, line2});
         }
 
@@ -201,7 +219,7 @@ namespace KizhiPart2
             Assert.AreEqual(new[] {"2", "2", null},
                 new[] {line, line2, line3,});
         }
-        
+
         [Test]
         public void RunAndRunAfterResetBuffersWithError()
         {
