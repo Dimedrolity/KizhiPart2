@@ -279,12 +279,12 @@ namespace KizhiPart2
             return _variableNameToValue[variableName];
         }
 
-        public int SetValueOfVariableWithName(string variableName, int value)
+        public void SetValueOfVariableWithName(string variableName, int value)
         {
             if (value <= 0)
                 throw new ArgumentException("Значениями переменных могут быть только натуральные числа");
             
-            return _variableNameToValue[variableName] = value;
+            _variableNameToValue[variableName] = value;
         }
 
         public void RemoveVariableWithName(string variableName)
