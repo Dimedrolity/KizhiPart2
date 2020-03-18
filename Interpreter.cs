@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace KizhiPart2
 {
@@ -33,8 +32,7 @@ namespace KizhiPart2
         {
             if (_isSourceCodeStarts)
             {
-                _codeLines = command.Split('\n')
-                    .Where(line => !string.IsNullOrEmpty(line)).ToArray();
+                _codeLines = command.Split(new[] {'\n'}, StringSplitOptions.RemoveEmptyEntries);
 
                 FindAllFunctionDefinitions();
                 _isSourceCodeStarts = false;
@@ -60,7 +58,7 @@ namespace KizhiPart2
                 {
                     if (CurrentLineOfCode.StartsWith("def"))
                     {
-                        _currentLineParts = CurrentLineOfCode.Split(' ');
+                        _currentLineParts = CurrentLineOfCode.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
                         var functionName = _currentLineParts[1];
                         _functionNameToDefinitionLine[functionName] = _currentLineNumber;
                     }
@@ -122,7 +120,7 @@ namespace KizhiPart2
 
         private void ParseCommandOfCurrentLine()
         {
-            _currentLineParts = CurrentLineOfCode.TrimStart().Split(' ');
+            _currentLineParts = CurrentLineOfCode.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
             var commandName = _currentLineParts[0];
 
             switch (commandName)
@@ -264,7 +262,7 @@ namespace KizhiPart2
             _variablesStorage.Clear();
         }
     }
-    
+
     internal class VariablesStorage
     {
         private readonly Dictionary<string, int> _variableNameToValue = new Dictionary<string, int>();
@@ -283,7 +281,7 @@ namespace KizhiPart2
         {
             if (value <= 0)
                 throw new ArgumentException("Значениями переменных могут быть только натуральные числа");
-            
+
             _variableNameToValue[variableName] = value;
         }
 
