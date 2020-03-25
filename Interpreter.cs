@@ -79,17 +79,16 @@ namespace KizhiPart2
         {
             while (_commandExecutor.IsPreviousCommandExecuted && !IsCodeEnd)
             {
-                ParseCurrentCodeLine();
+                ParseCurrentLineOfCode();
 
-                if (_commandForExecute == null)
-                    continue;
+                if (_commandForExecute == null) continue;
 
                 _commandExecutor.Execute(_commandForExecute);
                 _commandForExecute = null;
             }
         }
 
-        private void ParseCurrentCodeLine()
+        private void ParseCurrentLineOfCode()
         {
             if (_callStack.Count != 0)
                 ParseCurrentLineOfFunction();
