@@ -10,11 +10,9 @@ namespace KizhiPart2
 
         private string[] _codeLines;
         private int _currentLineNumber;
-        private string[] _currentLineParts;
-
-        private bool IsCodeEnd => _codeLines != null && !IsCurrentLineInsideCode && _callStack.Count == 0;
         private bool IsCurrentLineInsideCode => _currentLineNumber < _codeLines.Length;
         private string CurrentLineOfCode => _codeLines[_currentLineNumber];
+        private bool IsCodeEnd => _codeLines != null && !IsCurrentLineInsideCode && _callStack.Count == 0;
 
         private readonly Dictionary<string, int> _functionNameToDefinitionLine = new Dictionary<string, int>();
 
@@ -58,8 +56,9 @@ namespace KizhiPart2
                 {
                     if (CurrentLineOfCode.StartsWith("def"))
                     {
-                        _currentLineParts = CurrentLineOfCode.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
-                        var functionName = _currentLineParts[1];
+                        var currentLineParts = CurrentLineOfCode
+                            .Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+                        var functionName = currentLineParts[1];
                         _functionNameToDefinitionLine[functionName] = _currentLineNumber;
                     }
 
@@ -120,8 +119,8 @@ namespace KizhiPart2
 
         private void ParseCommandOfCurrentLine()
         {
-            _currentLineParts = CurrentLineOfCode.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
-            var commandName = _currentLineParts[0];
+            var currentLineParts = CurrentLineOfCode.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+            var commandName = currentLineParts[0];
 
             switch (commandName)
             {
@@ -132,7 +131,7 @@ namespace KizhiPart2
                     PushFunctionToStackAndGoToDefinition();
                     break;
                 default:
-                    _commandForExecute = CreateCommandFromCurrentLine();
+                    _commandForExecute = CreateCommandFromCurrentLineParts();
                     _currentLineNumber++;
                     break;
             }
@@ -148,18 +147,18 @@ namespace KizhiPart2
 
             void PushFunctionToStackAndGoToDefinition()
             {
-                var functionName = _currentLineParts[1];
+                var functionName = currentLineParts[1];
                 _callStack.Push((functionName, _currentLineNumber));
                 _currentLineNumber = _functionNameToDefinitionLine[functionName];
             }
 
-            Command CreateCommandFromCurrentLine()
+            Command CreateCommandFromCurrentLineParts()
             {
-                if (_currentLineParts.Length <= 2)
-                    return new Command(_currentLineParts[0], _currentLineParts[1]);
+                if (currentLineParts.Length <= 2)
+                    return new Command(currentLineParts[0], currentLineParts[1]);
 
-                var commandValue = int.Parse(_currentLineParts[2]);
-                return new CommandWithValue(_currentLineParts[0], _currentLineParts[1], commandValue);
+                var commandValue = int.Parse(currentLineParts[2]);
+                return new CommandWithValue(currentLineParts[0], currentLineParts[1], commandValue);
             }
         }
     }
