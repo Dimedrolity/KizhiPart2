@@ -1,12 +1,11 @@
 ﻿using System;
 using System.IO;
-using System.Text;
 using NUnit.Framework;
 
 namespace KizhiPart2
 {
     [TestFixture]
-    public class tests
+    public class InterpreterTests
     {
         [Test]
         public void SimpleTest()
