@@ -7,169 +7,138 @@ namespace KizhiPart2
     [TestFixture]
     public class InterpreterTests
     {
-        [Test]
-        public void SimpleTest()
-        {
-            var path = @"D:\testSimple.txt";
-            var sw = new StreamWriter(path) {AutoFlush = true};
-            var interpreter = new Interpreter(sw);
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine("set a 10\nprint a\nprint a\nsub a 4\nprint a\nrem a");
-            interpreter.ExecuteLine("end code");
-            interpreter.ExecuteLine("run");
+        private readonly string[] _commandsSeparator = {"\r\n"};
 
-            sw.Close();
-            var sr = new StreamReader(path);
-            var line = sr.ReadLine();
-            var line2 = sr.ReadLine();
-            var line3 = sr.ReadLine();
-            var line4 = sr.ReadLine();
-            Assert.AreEqual(new[] {"10", "10", "6", null},
-                new[] {line, line2, line3, line4});
+        void TestInterpreter(string[] commands, string[] expectedOutput)
+        {
+            string[] actualOutput;
+            using (var sw = new StringWriter())
+            {
+                var interpreter = new Interpreter(sw);
+
+                foreach (var command in commands)
+                {
+                    interpreter.ExecuteLine(command);
+                }
+
+                actualOutput = sw.ToString().Split(_commandsSeparator, StringSplitOptions.RemoveEmptyEntries);
+            }
+
+            Assert.AreEqual(expectedOutput.Length, actualOutput.Length);
+            Assert.AreEqual(expectedOutput, actualOutput);
         }
 
         [Test]
-        public void AfterRem()
+        public void SeveralCommands()
         {
-            var path = @"D:\testAfterRem.txt";
-            var sw = new StreamWriter(path) {AutoFlush = true};
+            TestInterpreter(new[]
+            {
+                "set code",
 
-            var interpreter = new Interpreter(sw);
+                "set a 10\n" +
+                "print a\n" +
+                "print a\n" +
+                "sub a 4\n" +
+                "print a\n" +
+                "rem a",
 
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine("set a 10\nrem a\nprint a\nset b 20\nprint b");
-            interpreter.ExecuteLine("end code");
-            interpreter.ExecuteLine("run");
-
-            sw.Close();
-            var sr = new StreamReader(path);
-            var line = sr.ReadLine();
-            var line2 = sr.ReadLine();
-
-            Assert.AreEqual(new[] {"Переменная отсутствует в памяти", null}, new[] {line, line2});
-        }
-
-        [Test]
-        public void SimpleFunc()
-        {
-            var path = @"D:\testmyfuc.txt";
-
-            var sw = new StreamWriter(path) {AutoFlush = true};
-
-            var interpreter = new Interpreter(sw);
-
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine("def myfunc\n    set a 10\n    print a\ncall myfunc\nprint a");
-            interpreter.ExecuteLine("end code");
-            interpreter.ExecuteLine("run");
-
-            sw.Close();
-            var sr = new StreamReader(path);
-            var line = sr.ReadLine();
-            var line2 = sr.ReadLine();
-            var line3 = sr.ReadLine();
-
-            Assert.AreEqual(new[] {"10", "10", null},
-                new[] {line, line2, line3});
-        }
-
-
-        [Test]
-        public void ExampleFunc()
-        {
-            var path = @"D:\testexfunc.txt";
-
-            var sw = new StreamWriter(path) {AutoFlush = true};
-
-            var interpreter = new Interpreter(sw);
-
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine("def test\n    set a 10\n    sub a 3\n    print b\nset b 7\ncall test");
-            interpreter.ExecuteLine("end code");
-            interpreter.ExecuteLine("run");
-
-            sw.Close();
-            var sr = new StreamReader(path);
-            var line = sr.ReadLine();
-            var line2 = sr.ReadLine();
-
-            Assert.AreEqual(new[] {"7", null}, new[] {line, line2});
-        }
-
-        [Test]
-        public void DefinitionBelowCall()
-        {
-            var path = @"D:\testDefBelowCall.txt";
-
-            var sw = new StreamWriter(path) {AutoFlush = true};
-
-            var interpreter = new Interpreter(sw);
-
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine("call test\nprint a\ndef test\n    set a 5");
-            interpreter.ExecuteLine("end code");
-            interpreter.ExecuteLine("run");
-
-            sw.Close();
-            var sr = new StreamReader(path);
-            var line = sr.ReadLine();
-            var line2 = sr.ReadLine();
-
-
-            Assert.AreEqual(new[] {"5", null},
-                new[] {line, line2,});
+                "end code",
+                "run"
+            }, new[] {"10", "10", "6"});
         }
 
         [Test]
         public void DontExecuteAfterNotFound()
         {
-            var path = @"D:\testDontExecuteAfterNotFound.txt";
-            var sw = new StreamWriter(path) {AutoFlush = true};
-            var interpreter = new Interpreter(sw);
+            TestInterpreter(new[]
+            {
+                "set code",
 
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine(
                 "print a\n" +
                 "set a 5\n" +
-                "print a\n");
-            interpreter.ExecuteLine("end code");
+                "print a",
 
-            interpreter.ExecuteLine("run");
+                "end code",
+                "run"
+            }, new[] {"Переменная отсутствует в памяти"});
+        }
 
-            sw.Close();
-            var sr = new StreamReader(path);
-            var line = sr.ReadLine();
-            var line2 = sr.ReadLine();
-            Assert.AreEqual(new[] {"Переменная отсутствует в памяти", null},
-                new[] {line, line2});
+        [Test]
+        public void SimpleFunction()
+        {
+            TestInterpreter(new[]
+            {
+                "set code",
+
+                "def myfunc\n" +
+                "    set a 10\n" +
+                "    print a\n" +
+                "call myfunc\n" +
+                "print a",
+
+                "end code",
+                "run"
+            }, new[] {"10", "10"});
+        }
+
+        [Test]
+        public void FunctionFromExample()
+        {
+            TestInterpreter(new[]
+            {
+                "set code",
+
+                "def test\n" +
+                "    set a 10\n" +
+                "    sub a 3\n" +
+                "    print b\n" +
+                "set b 7\n" +
+                "call test",
+
+                "end code",
+                "run"
+            }, new[] {"7"});
+        }
+
+        [Test]
+        public void FunctionCallBeforeDefinition()
+        {
+            TestInterpreter(new[]
+            {
+                "set code",
+
+                "call test\n" +
+                "print a\n" +
+                "def test\n" +
+                "    set a 5",
+
+                "end code",
+                "run"
+            }, new[] {"5"});
         }
 
         [Test]
         public void VariableValueIsZero()
         {
-            var path = @"testVariableValueIsZero.txt";
-            var sw = new StreamWriter(path) {AutoFlush = true};
-            var interpreter = new Interpreter(sw);
+            Assert.Throws<ArgumentException>(() =>
+                TestInterpreter(new[]
+                {
+                    "set code",
 
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine("set m 0");
-            interpreter.ExecuteLine("end code");
+                    "set m 0",
 
-            Assert.Throws<ArgumentException>(() => interpreter.ExecuteLine("run"));
-            sw.Close();
+                    "end code",
+                    "run"
+                }, new string[0])
+            );
         }
 
         [Test]
-        public void FuncCallFunc()
+        public void FunctionCallFunction()
         {
-            var path = @"D:\testFuncCallFunc.txt";
-
-            var sw = new StreamWriter(path) {AutoFlush = true};
-
-            var interpreter = new Interpreter(sw);
-
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine(
+            TestInterpreter(new[]
+            {
+                "set code",
                 "def one\n" +
                 "    set a 20\n" +
                 "    sub a 5\n" +
@@ -178,71 +147,47 @@ namespace KizhiPart2
                 "def two\n" +
                 "    sub a 5\n" +
                 "    sub a 5\n" +
-                "call one");
-            interpreter.ExecuteLine("end code");
-            interpreter.ExecuteLine("run");
-
-
-            sw.Close();
-            var sr = new StreamReader(path);
-            var line = sr.ReadLine();
-            var line2 = sr.ReadLine();
-
-
-            Assert.AreEqual(new[] {"5", null},
-                new[] {line, line2});
+                "call one",
+                "end code",
+                "run"
+            }, new[] {"5"});
         }
 
         [Test]
         public void RunAndRunAfterResetBuffers()
         {
-            var path = @"D:\testRunAndRunAfterResetBuffers.txt";
+            TestInterpreter(new[]
+            {
+                "set code",
 
-            var sw = new StreamWriter(path) {AutoFlush = true};
+                "def test\n" +
+                "    set a 5\n" +
+                "    sub a 3\n" +
+                "    print a\n" +
+                "call test",
 
-            var interpreter = new Interpreter(sw);
-
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine("def test\n    set a 5\n    sub a 3\n    print a\ncall test");
-            interpreter.ExecuteLine("end code");
-            interpreter.ExecuteLine("run");
-            interpreter.ExecuteLine("run");
-
-            sw.Close();
-            var sr = new StreamReader(path);
-            var line = sr.ReadLine();
-            var line2 = sr.ReadLine();
-            var line3 = sr.ReadLine();
-
-
-            Assert.AreEqual(new[] {"2", "2", null},
-                new[] {line, line2, line3,});
+                "end code",
+                "run",
+                "run"
+            }, new[] {"2", "2"});
         }
 
         [Test]
-        public void RunAndRunAfterResetBuffersWithError()
+        public void RunCodeWithErrorAndRunAfterResetBuffers()
         {
-            var path = @"D:\testRunAndRunAfterResetBuffersWithError.txt";
+            TestInterpreter(new[]
+                {
+                    "set code",
 
-            var sw = new StreamWriter(path) {AutoFlush = true};
+                    "sub a\n" +
+                    "set a 4\n" +
+                    "print a",
 
-            var interpreter = new Interpreter(sw);
-
-            interpreter.ExecuteLine("set code");
-            interpreter.ExecuteLine("sub a\nset a 4");
-            interpreter.ExecuteLine("end code");
-            interpreter.ExecuteLine("run");
-            interpreter.ExecuteLine("run");
-
-            sw.Close();
-            var sr = new StreamReader(path);
-            var line = sr.ReadLine();
-            var line2 = sr.ReadLine();
-            var line3 = sr.ReadLine();
-
-
-            Assert.AreEqual(new[] {"Переменная отсутствует в памяти", "Переменная отсутствует в памяти", null},
-                new[] {line, line2, line3,});
+                    "end code",
+                    "run",
+                    "run"
+                },
+                new[] {"Переменная отсутствует в памяти", "Переменная отсутствует в памяти"});
         }
 
 
@@ -250,22 +195,19 @@ namespace KizhiPart2
         // [Test]
         // public void Recursive()
         // {
-        //     var path = @"D:\testRecursive.txt";
-        //
-        //     var sw = new StreamWriter(path);
-        //     sw.AutoFlush = true;
-        //
-        //     var interpreter = new Interpreter(sw);
-        //
-        //     interpreter.ExecuteLine("set code");
-        //     interpreter.ExecuteLine(
+        //     TestInterpreter(new[]
+        //     {
+        //         "set code",
+        //         
         //         "def printfunc\n" +
         //         "    print a\n" +
         //         "    call printfunc\n" +
         //         "set a 5\n" +
-        //         "call printfunc\n");
-        //     interpreter.ExecuteLine("end code");
-        //     interpreter.ExecuteLine("run");
+        //         "call printfunc\n",
+        //         
+        //         "end code",
+        //         "run"
+        //     }, new string[0]);
         // }
     }
 }

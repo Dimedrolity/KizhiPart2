@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ContentModelStore">
+    <e p="C:\Users\Дима\.Rider2019.3\config\consoles\db" t="IncludeRecursive" />
+    <e p="C:\Users\Дима\.Rider2019.3\config\extensions" t="IncludeRecursive" />
     <e p="C:\Users\Дима\.Rider2019.3\system\extResources" t="IncludeRecursive" />
     <e p="C:\Users\Дима\.Rider2019.3\system\resharper-host\local\Transient\ReSharperHost\v193\SolutionCaches\_.19.01" t="ExcludeRecursive" />
-    <e p="C:\Users\Дима\Downloads\KizhiPart2.csproj" t="IncludeRecursive">
+    <e p="D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2" t="IncludeRecursive">
       <e p="app.config" t="Include" />
       <e p="bin" t="ExcludeRecursive" />
       <e p="Interpreter.cs" t="Include" />
+      <e p="InterpreterTests.cs" t="Include" />
       <e p="KizhiPart2.csproj" t="IncludeRecursive" />
       <e p="obj" t="ExcludeRecursive" />
       <e p="packages" t="ExcludeRecursive" />
       <e p="packages.config" t="Include" />
       <e p="program.cs" t="Include" />
-      <e p="tests.cs" t="Include" />
     </e>
   </component>
 </project>

@@ -31,3 +31,14 @@ D:\Учёба\Тестовые на стажировку C# Контур\Киж�
 D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2.csproj\obj\Debug\KizhiPart2.csproj.CopyComplete
 D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2.csproj\obj\Debug\KizhiPart2.exe
 D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2.csproj\obj\Debug\KizhiPart2.pdb
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\bin\Debug\KizhiPart2.exe.config
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\bin\Debug\KizhiPart2.exe
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\bin\Debug\KizhiPart2.pdb
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\bin\Debug\nunit.framework.dll
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\bin\Debug\nunit.framework.pdb
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\bin\Debug\nunit.framework.xml
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\obj\Debug\KizhiPart2.csprojAssemblyReference.cache
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\obj\Debug\KizhiPart2.csproj.CoreCompileInputs.cache
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\obj\Debug\KizhiPart2.csproj.CopyComplete
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\obj\Debug\KizhiPart2.exe
+D:\Учёба\Тестовые на стажировку C# Контур\Кижи\KizhiPart2\obj\Debug\KizhiPart2.pdb
