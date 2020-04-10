@@ -47,7 +47,10 @@ namespace KizhiPart2
             }
 
             if (IsCodeEnd || !_commandExecutor.IsPreviousCommandExecuted)
-                Reset();
+            {
+                _currentLineNumber = 0;
+                _commandExecutor.Reset();
+            }
 
 
             void FindAllFunctionDefinitions()
@@ -66,12 +69,6 @@ namespace KizhiPart2
                 }
 
                 _currentLineNumber = 0;
-            }
-
-            void Reset()
-            {
-                _currentLineNumber = 0;
-                _commandExecutor.Reset();
             }
         }
 
@@ -278,7 +275,9 @@ namespace KizhiPart2
         public void SetValueOfVariableWithName(string variableName, int value)
         {
             if (value <= 0)
-                throw new ArgumentException("Значениями переменных могут быть только натуральные числа");
+                throw new ArgumentException(
+                    $"Попытка присвоить в переменную '{variableName}' значение '{value}'.\n" +
+                    "Значениями переменных могут быть только натуральные числа");
 
             _variableNameToValue[variableName] = value;
         }
